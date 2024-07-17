@@ -2,7 +2,7 @@
 
 *Evaluating text-to-image generation using VQAScore with CLIP-FlanT5! This codebase contains the training code for CLIP-FlanT5.*
 
-[[Project Page](https://linzhiqiu.github.io/vqascore/)] [[Code for evaluation](https://github.com/linzhiqiu/t2v_metrics)]  [[Data](https://github.com/linzhiqiu/CLIP-FlanT5/blob/main/docs/Data.md)] [[Model Zoo](https://github.com/linzhiqiu/CLIP-FlanT5/blob/main/docs/MODEL_ZOO.md)]
+[[Project Page](https://linzhiqiu.github.io/vqascore/)] [[Code for evaluation](https://github.com/linzhiqiu/t2v_metrics)]  [[Data](https://github.com/linzhiqiu/CLIP-FlanT5/blob/master/docs/Data.md)] [[Model Zoo](https://github.com/linzhiqiu/CLIP-FlanT5/blob/master/docs/MODEL_ZOO.md)]
 
 **Evaluating Text-to-Visual Generation with Image-to-Text Generation** (Arxiv) [[Paper](https://linzhiqiu.github.io/papers/vqascore/)]<br>
 [Zhiqiu Lin](https://linzhiqiu.github.io/), [Deepak Pathak](https://scholar.google.com/citations?user=AEsPCAUAAAAJ&hl=en), [Baiqi Li](www.google.com), [Jiayao Li](https://x.com/EmilyLiJiayao), [Xide Xia](www.google.com), [Graham Neubig](https://x.com/gneubig), [Pengchuan Zhang*](www.google.com), [Deva Ramanan*](https://www.cs.cmu.edu/~deva/)
@@ -24,8 +24,8 @@
 - [Install](#install)
 - [Model Weights](#model-weights)
 - [Demo](#Demo)
-- [Model Zoo](https://github.com/linzhiqiu/CLIP-FlanT5/blob/main/docs/MODEL_ZOO.md)
-- [Dataset](https://github.com/linzhiqiu/CLIP-FlanT5/blob/main/docs/Data.md)
+- [Model Zoo](https://github.com/linzhiqiu/CLIP-FlanT5/blob/master/docs/MODEL_ZOO.md)
+- [Dataset](https://github.com/linzhiqiu/CLIP-FlanT5/blob/master/docs/Data.md)
 - [Train](#train)
 - [Evaluation](#evaluation)
 
@@ -66,7 +66,7 @@ pip install -e .
 ```
 
 ## CLIP-FlanT5 Weights
-Please check out our [Model Zoo](https://github.com/linzhiqiu/CLIP-FlanT5/blob/main/docs/MODEL_ZOO.md) for public CLIP-FlanT5 checkpoints.
+Please check out our [Model Zoo](https://github.com/linzhiqiu/CLIP-FlanT5/blob/master/docs/MODEL_ZOO.md) for public CLIP-FlanT5 checkpoints.
 
 ## Train
 
@@ -106,12 +106,12 @@ playground/data/
 
 Pretrain takes around 5 hours for CLIP-FlanT5-XXL on 8x A100 (80G) using the image resolution of 336px. It takes around 2 hours for LLaVA-v1.5-7B.
 
-Training script with DeepSpeed ZeRO-2: [`clip-flant5-xxl-stage-1.sh`](https://github.com/linzhiqiu/CLIP-FlanT5/blob/main/scripts/v1_5/clip-flant5-xxl-stage-1.sh).
+Training script with DeepSpeed ZeRO-2: [`clip-flant5-xxl-stage-1.sh`](https://github.com/linzhiqiu/CLIP-FlanT5/blob/master/scripts/v1_5/clip-flant5-xxl-stage-1.sh).
 
 - `--mm_projector_type mlp2x_gelu`: the two-layer MLP vision-language connector.
 - `--vision_tower openai/clip-vit-large-patch14-336`: CLIP ViT-L/14 336px.
 
-If you are using slurm environment, you can also use the slurm script (by changing the default partition name to your own `#SBATCH --partition={your_own_partition}`) provided in [`clip-flant5-xxl-stage-1.slurm`](https://github.com/linzhiqiu/CLIP-FlanT5/blob/main/scripts/v1_5/clip-flant5-xxl-stage-1.slurm).
+If you are using slurm environment, you can also use the slurm script (by changing the default partition name to your own `#SBATCH --partition={your_own_partition}`) provided in [`clip-flant5-xxl-stage-1.slurm`](https://github.com/linzhiqiu/CLIP-FlanT5/blob/master/scripts/v1_5/clip-flant5-xxl-stage-1.slurm).
 
 ### Finetune (training for VQA)
 
@@ -143,11 +143,11 @@ After downloading all of them, organize the data as follows in `./playground/dat
 
 2. Start training!
 
-You may download the stage-1 pretrained projectors in [Model Zoo](https://github.com/linzhiqiu/CLIP-FlanT5/blob/main/docs/MODEL_ZOO.md).
+You may download the stage-1 pretrained projectors in [Model Zoo](https://github.com/linzhiqiu/CLIP-FlanT5/blob/master/docs/MODEL_ZOO.md).
 
 Stage-2 VQA training takes around 80 hours for CLIP-FlanT5-XXL on 8x A100 (80G), due to the increased resolution to 336px and flattening the multi-turn conversations into single-turn. It takes around 60 hours for CLIP-FlanT5-XL on 8x A100 (40G).
 
-Training script with DeepSpeed ZeRO-3: [`clip-flant5-xxl.sh`](https://github.com/linzhiqiu/CLIP-FlanT5/blob/main/scripts/v1_5/clip-flant5-xxl.sh). Optionally, if you use slurm, then you may use [`clip-flant5-xxl.slurm`](https://github.com/linzhiqiu/CLIP-FlanT5/blob/main/scripts/v1_5/clip-flant5-xxl.slurm) (make sure to change the default slurm partition).
+Training script with DeepSpeed ZeRO-3: [`clip-flant5-xxl.sh`](https://github.com/linzhiqiu/CLIP-FlanT5/blob/master/scripts/v1_5/clip-flant5-xxl.sh). Optionally, if you use slurm, then you may use [`clip-flant5-xxl.slurm`](https://github.com/linzhiqiu/CLIP-FlanT5/blob/master/scripts/v1_5/clip-flant5-xxl.slurm) (make sure to change the default slurm partition).
 
 New options to note:
 
