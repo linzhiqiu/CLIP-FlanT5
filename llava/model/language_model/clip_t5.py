@@ -35,7 +35,7 @@ class CLIPT5Config(T5Config):
 
 
 # class CLIPT5ForConditionalGeneration(LlavaMetaModel, LlavaMetaForSeq2SeqLM, T5ForConditionalGeneration): # To make multiple inheritance work, need to put T5ForConditionalGeneration at the end
-class CLIPT5ForConditionalGeneration(T5ForConditionalGeneration): # To make multiple inheritance work, need to put T5ForConditionalGeneration at the end
+class CLIPT5ForConditionalGeneration(T5ForConditionalGeneration):
     # This class supports both T5 and FlanT5
     config_class = CLIPT5Config
 
@@ -62,11 +62,12 @@ class CLIPT5ForConditionalGeneration(T5ForConditionalGeneration): # To make mult
         vision_tower = self.get_vision_tower()
         if vision_tower is None or images is None or input_ids.shape[1] == 1:
             # TODO: This is probably off
+            return input_ids, attention_mask, decoder_attention_mask, past_key_values, None, labels
+            import pdb; pdb.set_trace()
             raise NotImplementedError()
             if past_key_values is not None and vision_tower is not None and images is not None and input_ids.shape[1] == 1:
                 attention_mask = torch.ones((attention_mask.shape[0], past_key_values[-1][-1].shape[-2] + 1), dtype=attention_mask.dtype, device=attention_mask.device)
                 decoder_attention_mask = torch.ones((decoder_attention_mask.shape[0], past_key_values[-1][-1].shape[-2] + 1), dtype=decoder_attention_mask.dtype, device=attention_mask.device)
-            return input_ids, attention_mask, decoder_attention_mask, past_key_values, None, labels
 
         if type(images) is list or images.ndim == 5:
             concat_images = torch.cat([image for image in images], dim=0)
@@ -209,6 +210,7 @@ class CLIPT5ForConditionalGeneration(T5ForConditionalGeneration): # To make mult
         output_hidden_states: Optional[bool] = None,
         images: Optional[torch.FloatTensor] = None,
         return_dict: Optional[bool] = None,
+        **kwargs,
     ) -> Union[Tuple[torch.FloatTensor], Seq2SeqLMOutput]:
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
         output_hidden_states = (
@@ -216,9 +218,9 @@ class CLIPT5ForConditionalGeneration(T5ForConditionalGeneration): # To make mult
         )
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
-        _, attention_mask, decoder_attention_mask, past_key_values, inputs_embeds, labels = \
-            self.prepare_inputs_labels_for_multimodal(input_ids, attention_mask, decoder_attention_mask, past_key_values, labels, images)
-
+        if inputs_embeds is None:
+            _, attention_mask, decoder_attention_mask, past_key_values, inputs_embeds, labels = \
+                self.prepare_inputs_labels_for_multimodal(input_ids, attention_mask, decoder_attention_mask, past_key_values, labels, images)
         # decoder outputs consists of (dec_features, layer_state, dec_hidden, dec_attn)
         outputs = super(CLIPT5ForConditionalGeneration, self).forward(
             input_ids=None, # will be None if inputs_embeds is not None
@@ -230,9 +232,31 @@ class CLIPT5ForConditionalGeneration(T5ForConditionalGeneration): # To make mult
             use_cache=use_cache,
             output_attentions=output_attentions,
             output_hidden_states=output_hidden_states,
-            return_dict=return_dict
+            return_dict=return_dict,
+            **kwargs,
         )
 
+        return outputs
+    
+    @torch.no_grad()
+    def generate(
+        self,
+        inputs: Optional[torch.Tensor] = None,
+        attention_mask: Optional[torch.Tensor] = None,
+        images: Optional[torch.Tensor] = None,
+        **kwargs,
+    ):
+        assert images is not None, "images must be provided"
+        assert inputs is not None, "inputs must be provided"
+        assert attention_mask is not None, "attention_mask must be provided"
+        _, attention_mask, _, _, inputs_embeds, _ = \
+            self.prepare_inputs_labels_for_multimodal(inputs, attention_mask, None, None, None, images)
+        # decoder outputs consists of (dec_features, layer_state, dec_hidden, dec_attn)
+        outputs = super(CLIPT5ForConditionalGeneration, self).generate(
+            input_ids=None, # will be None if inputs_embeds is not None
+            attention_mask=attention_mask,
+            inputs_embeds=inputs_embeds,
+        )
         return outputs
 
     def prepare_inputs_for_generation(
@@ -246,6 +270,7 @@ class CLIPT5ForConditionalGeneration(T5ForConditionalGeneration): # To make mult
         cross_attn_head_mask=None,
         use_cache=None,
         encoder_outputs=None,
+        inputs_embeds=None,
         **kwargs,
     ):
         # cut decoder_input_ids if past_key_values is used
@@ -260,8 +285,14 @@ class CLIPT5ForConditionalGeneration(T5ForConditionalGeneration): # To make mult
                 remove_prefix_length = input_ids.shape[1] - 1
 
             input_ids = input_ids[:, remove_prefix_length:]
+            
+        # if `inputs_embeds` are passed, we only want to use them in the 1st generation step
+        if inputs_embeds is not None and past_key_values is None:
+            model_inputs = {"inputs_embeds": inputs_embeds}
+        else:
+            model_inputs = {"input_ids": input_ids}
 
-        return {
+        model_inputs.update({
             "decoder_input_ids": input_ids,
             "past_key_values": past_key_values,
             "encoder_outputs": encoder_outputs,
@@ -271,8 +302,8 @@ class CLIPT5ForConditionalGeneration(T5ForConditionalGeneration): # To make mult
             "decoder_attention_mask": decoder_attention_mask,
             "cross_attn_head_mask": cross_attn_head_mask,
             "use_cache": use_cache,
-            "images": kwargs.get("images", None),
-        }
+        })
+        return model_inputs
 
 
 AutoConfig.register("clip_t5", CLIPT5Config)

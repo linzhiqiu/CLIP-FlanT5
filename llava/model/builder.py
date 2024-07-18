@@ -36,21 +36,22 @@ CLIP_T5_BASE_MODELS = {
 
 def load_pretrained_model(model_path, model_base, model_name, load_8bit=False, load_4bit=False, device_map="auto", device="cuda"):
     kwargs = {"device_map": device_map}
-
+    use_t5 = 'clip-t5' in model_name.lower() or 'clip-flant5' in model_name.lower()
+    dtype = torch.bfloat16 if use_t5 else torch.float16
+    
     if load_8bit:
         kwargs['load_in_8bit'] = True
     elif load_4bit:
         kwargs['load_in_4bit'] = True
         kwargs['quantization_config'] = BitsAndBytesConfig(
             load_in_4bit=True,
-            bnb_4bit_compute_dtype=torch.float16,
+            bnb_4bit_compute_dtype=dtype,
             bnb_4bit_use_double_quant=True,
             bnb_4bit_quant_type='nf4'
         )
     else:
-        kwargs['torch_dtype'] = torch.float16
+        kwargs['torch_dtype'] = dtype
 
-    use_t5 = 'clip-t5' in model_name.lower() or 'clip-flant5' in model_name.lower()
     if 'llava' in model_name.lower():
         # Load LLaVA model
         if 'lora' in model_name.lower() and model_base is None:
@@ -104,7 +105,7 @@ def load_pretrained_model(model_path, model_base, model_name, load_8bit=False, l
                 model = LlavaLlamaForCausalLM.from_pretrained(model_base, low_cpu_mem_usage=True, config=cfg_pretrained, **kwargs)
 
             mm_projector_weights = torch.load(os.path.join(model_path, 'mm_projector.bin'), map_location='cpu')
-            mm_projector_weights = {k: v.to(torch.float16) for k, v in mm_projector_weights.items()}
+            mm_projector_weights = {k: v.to(dtype) for k, v in mm_projector_weights.items()}
             model.load_state_dict(mm_projector_weights, strict=False)
         else:
             if 'mpt' in model_name.lower():
@@ -174,9 +175,9 @@ def load_pretrained_model(model_path, model_base, model_name, load_8bit=False, l
     vision_tower = model.get_vision_tower()
     if not vision_tower.is_loaded:
         vision_tower.load_model()
-    vision_tower.to(device=device, dtype=torch.bfloat16)
+    vision_tower.to(device=device, dtype=dtype)
     mm_projector = model.get_model().mm_projector
-    mm_projector.to(dtype=torch.bfloat16, device=device)
+    mm_projector.to(dtype=dtype, device=device)
     image_processor = vision_tower.image_processor
 
     if hasattr(model.config, "max_sequence_length"):
